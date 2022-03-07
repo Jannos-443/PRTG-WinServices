@@ -5,7 +5,7 @@
     .DESCRIPTION
     Using WinRM and WMI this script searches for Windows services configured for automatic start, that are not started. As there are
     some services, that are never running, but configured as auto-start by default, exceptions can be configured. These exceptions
-    can be made within this script by changing the variable $ExcludeScript. This way, the change applies to all PRTG sensors 
+    can be made within this script by changing the variable $ExcludeScript. This way, the change applies to all PRTG sensors
     based on this script. If exceptions have to be made on a per sensor level, the script parameter $ExcludePattern can be used.
 
     1. Run Script from PRTG (Requires Local Admin on Remote Computer)
@@ -21,7 +21,7 @@
 
     Create PRTG HTTP Push Data Advanced Sensor and Copy the Token (Token is available in the Sensor Settings after Creating the Sensor)
     - No Incoming Data -> Switch to down status after x minutes (set minimum the Repeat time *2 + 2min)
-    
+
     Create Scheduled Task on Remote Server
     - Action\Programm: powershell.exe
     - Action\Arguments: -Command "& 'C:\PRTG\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken'"
@@ -76,35 +76,34 @@
     -Command "& 'D:\Powershell\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken'"
 
     .NOTES
-    This script is based on (https://github.com/debold/PRTG-WindowsServices) 
+    This script is based on (https://github.com/debold/PRTG-WindowsServices)
 
     Author:  Jannos-443
     https://github.com/Jannos-443/PRTG-WinServices
 #>
 param(
-    [string] $ComputerName = '',    #use "localhost" if you want to run the Script with HTTP Push on a Remote Server
+    [string] $ComputerName = '', #use "localhost" if you want to run the Script with HTTP Push on a Remote Server
     [string] $IncludePattern = '',
     [string] $ExcludePattern = '',
     [string] $UserName = "",
     [string] $Password = "",
     [Switch] $HideTotal,
-    [switch] $HttpPush,             #enables http push, usefull if you want to run the Script on the target Server to reduce remote Permissions
-    [string] $HttpToken,            #http push token
-    [string] $HttpServer,           #http push prtg server hostname
-    [string] $HttpPort = "5050",    #http push port (default 5050)
+    [switch] $HttpPush, #enables http push, usefull if you want to run the Script on the target Server to reduce remote Permissions
+    [string] $HttpToken, #http push token
+    [string] $HttpServer, #http push prtg server hostname
+    [string] $HttpPort = "5050", #http push port (default 5050)
     [switch] $HttpPushUseSSL        #use https for http push
 )
 
 #Catch all unhandled Errors
-trap{
-    if($session -ne $null)
-        {
+trap {
+    if ($session -ne $null) {
         Remove-CimSession -CimSession $session -ErrorAction SilentlyContinue
-        }
+    }
     $Output = "line:$($_.InvocationInfo.ScriptLineNumber.ToString()) char:$($_.InvocationInfo.OffsetInLine.ToString()) --- message: $($_.Exception.Message.ToString()) --- line: $($_.InvocationInfo.Line.ToString()) "
-    $Output = $Output.Replace("<","")
-    $Output = $Output.Replace(">","")
-    $Output = $Output.Replace("#","")
+    $Output = $Output.Replace("<", "")
+    $Output = $Output.Replace(">", "")
+    $Output = $Output.Replace("#", "")
     Write-Output "<prtg>"
     Write-Output "<error>1</error>"
     Write-Output "<text>$($Output)</text>"
@@ -124,87 +123,73 @@ if ($ComputerName -eq "") {
 }
 
 # Generate Credentials Object, if provided via parameter
-try
-    {
-    if($UserName -eq "" -or $Password -eq "") 
-        {
+try {
+    if ($UserName -eq "" -or $Password -eq "") {
         $Credentials = $null
-        }
-    else 
-        {
-        $SecPasswd  = ConvertTo-SecureString $Password -AsPlainText -Force
-        $Credentials= New-Object System.Management.Automation.PSCredential ($UserName, $secpasswd)
-        }
-    } 
-catch
-    {
+    }
+    else {
+        $SecPasswd = ConvertTo-SecureString $Password -AsPlainText -Force
+        $Credentials = New-Object System.Management.Automation.PSCredential ($UserName, $secpasswd)
+    }
+}
+catch {
     Write-Output "<prtg>"
     Write-Output " <error>1</error>"
     Write-Output " <text>Error Parsing Credentials ($($_.Exception.Message))</text>"
     Write-Output "</prtg>"
     Exit
-    }
+}
 
 $WmiClass = "Win32_Service"
 
 # Get list of Services.
-try 
-    {
-    if ($null -eq $Credentials) 
-        {
-        if($ComputerName -eq "localhost")
-            {
+try {
+    if ($null -eq $Credentials) {
+        if ($ComputerName -eq "localhost") {
             $Services = Get-CimInstance -Namespace "root\CIMV2" -ClassName $WmiClass
-            }
-        else
-            {
+        }
+        else {
             $Services = Get-CimInstance -Namespace "root\CIMV2" -ClassName $WmiClass -ComputerName $ComputerName
-            }
-        } 
-    
-    else 
-        {
+        }
+    }
+
+    else {
         $session = New-CimSession -ComputerName $ComputerName -Credential $Credentials
         $Services = Get-CimInstance -Namespace "root\CIMV2" -ClassName $WmiClass -CimSession $session
         Start-Sleep -Seconds 1
         Remove-CimSession -CimSession $session
-        }
+    }
 
-    } 
-catch 
-    {
+}
+catch {
     Write-Output "<prtg>"
     Write-Output " <error>1</error>"
     Write-Output " <text>Error connecting to $ComputerName ($($_.Exception.Message))</text>"
     Write-Output "</prtg>"
     Exit
-    }
+}
 
 # hardcoded exclude list that applies to all hosts
 $ExcludeScript = '^(MapsBroker|sppsvc|MicrosoftSearchInBing|KDService|gpsvc|DoSvc|wuauserv|ShellHWDetection|MSExchangeNotificationsBroker|BITS|RemoteRegistry|WbioSrvc|TrustedInstaller|gupdate|edgeupdate|Tiledatamodelsvc||clr_optimization_.+|CDPSvc|CDPUserSvc_.+|OneSyncSvc_.+|AppReadiness)$'
 $IncludeScript = ''
 
 #Excludes
-if ($ExcludePattern -ne "") 
-    {
-    $Services = $Services | Where-Object {$_.Name -notmatch $ExcludePattern}  
-    }
+if ($ExcludePattern -ne "") {
+    $Services = $Services | Where-Object { $_.Name -notmatch $ExcludePattern }
+}
 
-if ($ExcludeScript -ne "") 
-    {
-    $Services = $Services | Where-Object {$_.Name -notmatch $ExcludeScript}  
-    }
+if ($ExcludeScript -ne "") {
+    $Services = $Services | Where-Object { $_.Name -notmatch $ExcludeScript }
+}
 
 #Includes
-if ($IncludePattern -ne "") 
-    {
-    $Services = $Services | Where-Object {$_.Name -match $IncludePattern}  
-    }
+if ($IncludePattern -ne "") {
+    $Services = $Services | Where-Object { $_.Name -match $IncludePattern }
+}
 
-if ($IncludeScript -ne "") 
-    {
-    $Services = $Services | Where-Object {$_.Name -match $IncludeScript}  
-    }
+if ($IncludeScript -ne "") {
+    $Services = $Services | Where-Object { $_.Name -match $IncludeScript }
+}
 
 
 $TotalCount = ($Services | Measure-Object).Count
@@ -212,22 +197,20 @@ $TotalCount = ($Services | Measure-Object).Count
 $xmlOutput = '<prtg>'
 
 #Check for not running automatic starting Services
-$NotRunning = $Services | Where-Object {($_.StartMode -eq "Auto") -and ($_.State -ne "Running")}
+$NotRunning = $Services | Where-Object { ($_.StartMode -eq "Auto") -and ($_.State -ne "Running") }
 $NotRunningTXT = "Automatic service(s) not running: "
 $NotRunningCount = ($NotRunning | Measure-Object).Count
-foreach($NotRun in $NotRunning)
-    {
-    $NotRunningTXT += "$($NotRun.Name); "    
-    }
+foreach ($NotRun in $NotRunning) {
+    $NotRunningTXT += "$($NotRun.Name); "
+}
 
-if($NotRunningCount -gt 0)
-    {
+if ($NotRunningCount -gt 0) {
     $xmlOutput += "<text>$($NotRunningTXT)</text>"
-    }
+}
 
-else{
+else {
     $xmlOutput += "<text>All automatic services are running.</text>"
-    }
+}
 
 
 $xmlOutput += "<result>
@@ -239,39 +222,36 @@ $xmlOutput += "<result>
         </result>
         "
 
-if(-not $HideTotal)
-    {
+if (-not $HideTotal) {
     $xmlOutput += "<result>
     <channel>Total Services</channel>
     <value>$($TotalCount)</value>
     <unit>Count</unit>
     </result>
     "
-    }
+}
 
 $xmlOutput += "</prtg>"
 
 #region: Http Push
-if($httppush)
-    {
-    if($HttpPushUseSSL)
-        {$httppushssl = "https"}
+if ($httppush) {
+    if ($HttpPushUseSSL)
+    { $httppushssl = "https" }
     else
-        {$httppushssl = "http"}
+    { $httppushssl = "http" }
 
     Add-Type -AssemblyName system.web
 
-    $Answer=Invoke-Webrequest -method "GET" -URI ("$($httppushssl)://$($httpserver):$($httpport)/$($httptoken)?content=$(([System.Web.HttpUtility]::UrlEncode($xmloutput)))") -usebasicparsing
+    $Answer = Invoke-Webrequest -method "PUT" -URI ("$($httppushssl)://$($httpserver):$($httpport)/$($httptoken)?content=$(([System.Web.HttpUtility]::UrlEncode($xmloutput)))") -usebasicparsing
 
-    if ($answer.Statuscode -ne 200)
-        {
+    if ($answer.Statuscode -ne 200) {
         Write-Output "<prtg>"
         Write-Output "<error>1</error>"
         Write-Output "<text>http push failed</text>"
         Write-Output "</prtg>"
         Exit
-        }
     }
+}
 #endregion
 
 #finish Script - Write Output
