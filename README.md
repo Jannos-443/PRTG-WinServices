@@ -7,7 +7,9 @@ Jannos-443
 ## Changelog 
 ### V1.0
 - Monitor automatic Windows Services
-- Use HTTP Push to avoid local Permission on critical Remote Servers (Backup etc.)
+- Added Ability to use HTTP Push to avoid local Permission on critical Remote Servers (Backup etc.)
+### V1.01
+- Added Ability to define Critical Services that have to be present
 
 ## HOW TO
 ### Option 1: Execute on Remote Server without PRTG needing local permissions on the Remote Server (HTTP Push Advanced)
@@ -121,3 +123,11 @@ For more information about regular expressions in PowerShell, visit [Microsoft D
 
 ".+" is one or more charakters
 ".*" is zero or more charakters
+
+## Least Privilege
+look into the following links:
+ - User has to be in the following groups: Performance Monitor Users and Distributed COM Users
+ - Windows Firewall WMI/WinRM
+ - Set WMI Permission
+  - https://github.com/grbray/PowerShell/blob/main/Windows/Set-WMINameSpaceSecurity.ps1
+  - https://knowledgebase.paloaltonetworks.com/KCSArticleDetail?id=kA10g000000ClcsCAC
