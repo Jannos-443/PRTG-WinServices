@@ -32,6 +32,14 @@
     The hostname or IP address of the Windows machine to be checked. Should be set to %host in the PRTG parameter configuration.
     Use "localhost" when you run the Script with HTTP Push on a Remote Computer
 
+    .PARAMETER UserName
+    Provide the Windows user name to connect to the target host via WinRM. Better way than explicit credentials is to set the PRTG sensor
+    to launch the script in the security context that uses the "Windows credentials of parent device".
+
+    .PARAMETER Password
+    Provide the Windows password for the user specified to connect to the target machine using WinRM. Better way than explicit credentials is to set the PRTG sensor
+    to launch the script in the security context that uses the "Windows credentials of parent device".
+
     .PARAMETER ExcludePattern
     Regular expression to describe the INTERNAL name (not display name) of Windows services not to be monitored. Easiest way is to
     use a simple enumeration of service names.
@@ -45,13 +53,25 @@
     .PARAMETER IncludePattern
     ExcludePattern just as Include
 
-    .PARAMETER UserName
-    Provide the Windows user name to connect to the target host via WinRM. Better way than explicit credentials is to set the PRTG sensor
-    to launch the script in the security context that uses the "Windows credentials of parent device".
+    .PARAMETER UseDisplayname
+    this Parameter forces the Script to use the Displayname values instead of the read service name.
+    be careful, you maybe also have to change the Includes/Excludes to match the Displaynames
 
-    .PARAMETER Password
-    Provide the Windows password for the user specified to connect to the target machine using WinRM. Better way than explicit credentials is to set the PRTG sensor
-    to launch the script in the security context that uses the "Windows credentials of parent device".
+    .PARAMETER CriticalServicePattern
+    Regular expression to describe your Critical Services that has to be present on every device.
+    For Example '^(WinDefend)$'
+    combine with CriticalServiceMustRun or CriticalServiceLimit to match your requirements
+
+    .PARAMETER CriticalServiceMustRun
+    CriticalServices must be present and state has to be running.
+    combine with -CriticalServicePattern
+
+    .PARAMETER CriticalServiceLimit
+    default Limit for the Critical Service Count.
+    For Example use -CriticalServicePattern '^(WinDefend|Bitdefender)$' -CriticalServiceLimit 2
+
+    .PARAMETER HideTotalServiceCount
+    Hides the "Total Services" channel
 
     .PARAMETER HttpPush
     enables HTTP Push in the Sensor (requires HttpToken, HttpServer and HttpPort)
@@ -83,18 +103,21 @@
 #>
 param(
     [string] $ComputerName = '', #use "localhost" if you want to run the Script with HTTP Push on a Remote Server
-    [string] $IncludePattern = '',
-    [string] $ExcludePattern = '',
     [string] $UserName = "",
     [string] $Password = "",
-    [Switch] $HideTotal,
+    [string] $IncludePattern = '',
+    [string] $ExcludePattern = '',
+    [Switch] $UseDisplayname,
+    [string] $CriticalServicePattern = '',
+    [switch] $CriticalServiceMustRun,
+    [int] $CriticalServiceLimit = '1',
+    [Switch] $HideTotalServiceCount,
     [switch] $HttpPush, #enables http push, usefull if you want to run the Script on the target Server to reduce remote Permissions
     [string] $HttpToken, #http push token
     [string] $HttpServer, #http push prtg server hostname
     [string] $HttpPort = "5050", #http push port (default 5050)
     [switch] $HttpPushUseSSL        #use https for http push
 )
-
 #Catch all unhandled Errors
 trap {
     if ($session -ne $null) {
@@ -169,6 +192,20 @@ catch {
     Exit
 }
 
+# Name = Displayname?
+if ($UseDisplayname) {
+    $AllServices = New-Object System.Collections.ArrayList
+    foreach ($Service in $Services) {
+        $ServiceObject = [PSCustomObject]@{
+            Name      = $Service.Displayname
+            StartMode = $Service.StartMode
+            State     = $Service.State
+        }
+        $null = $AllServices.Add($ServiceObject)
+    }
+    $Services = $AllServices
+}
+
 # hardcoded exclude list that applies to all hosts
 $ExcludeScript = '^(MapsBroker|sppsvc|MicrosoftSearchInBing|KDService|gpsvc|DoSvc|wuauserv|ShellHWDetection|MSExchangeNotificationsBroker|BITS|RemoteRegistry|WbioSrvc|TrustedInstaller|gupdate|edgeupdate|Tiledatamodelsvc||clr_optimization_.+|CDPSvc|CDPUserSvc_.+|OneSyncSvc_.+|AppReadiness)$'
 $IncludeScript = ''
@@ -191,27 +228,27 @@ if ($IncludeScript -ne "") {
     $Services = $Services | Where-Object { $_.Name -match $IncludeScript }
 }
 
-
 $TotalCount = ($Services | Measure-Object).Count
 
 $xmlOutput = '<prtg>'
+$OutputText = ""
 
 #Check for not running automatic starting Services
 $NotRunning = $Services | Where-Object { ($_.StartMode -eq "Auto") -and ($_.State -ne "Running") }
-$NotRunningTXT = "Automatic service(s) not running: "
+
 $NotRunningCount = ($NotRunning | Measure-Object).Count
-foreach ($NotRun in $NotRunning) {
-    $NotRunningTXT += "$($NotRun.Name); "
-}
 
 if ($NotRunningCount -gt 0) {
-    $xmlOutput += "<text>$($NotRunningTXT)</text>"
+    $NotRunningTXT = "Automatic service(s) not running: "
+    foreach ($NotRun in $NotRunning) {
+        $NotRunningTXT += "$($NotRun.Name); "
+    }
+    $OutputText += "$($NotRunningTXT)"
 }
 
 else {
-    $xmlOutput += "<text>All automatic services are running.</text>"
+    $OutputText += "All automatic services are running. "
 }
-
 
 $xmlOutput += "<result>
         <channel>Automatic Services not running</channel>
@@ -222,7 +259,7 @@ $xmlOutput += "<result>
         </result>
         "
 
-if (-not $HideTotal) {
+if (-not $HideTotalServiceCount) {
     $xmlOutput += "<result>
     <channel>Total Services</channel>
     <value>$($TotalCount)</value>
@@ -230,6 +267,47 @@ if (-not $HideTotal) {
     </result>
     "
 }
+
+#region Critical Services
+if ($CriticalServicePattern -ne "") {
+    if ($CriticalServiceMustRun) {
+        $CriticalServices = $Services | Where-Object { ($_.Name -match $CriticalServicePattern) -and ($_.State -eq "Running") }
+    }
+    else {
+        $CriticalServices = $Services | Where-Object { $_.Name -match $CriticalServicePattern }
+    }
+
+    $CriticalServicesCount = ($CriticalServices | Measure-Object).Count
+
+    $CriticalServicesText = "Critical Services found: "
+    if ($CriticalServicesCount -eq 0) {
+        $CriticalServicesText += "None!"
+    }
+    else {
+        foreach ($CriticalService in $CriticalServices) {
+            $CriticalServicesText += "$($CriticalService.Name); "
+        }
+    }
+
+    $xmlOutput += "<result>
+        <channel>CriticalService</channel>
+        <value>$($CriticalServicesCount)</value>
+        <unit>Count</unit>"
+        
+    if ($CriticalServiceLimit -ne "") {
+        $xmlOutput += "<limitmode>1</limitmode>
+            <LimitMinError>$($CriticalServiceLimit)</LimitMinError>" 
+    }
+    $xmlOutput += "</result>"
+    $OutputText += " ### $($CriticalServicesText)"
+}
+#endregion
+
+#Output Text
+$OutputText = $OutputText.Replace("<", "")
+$OutputText = $OutputText.Replace(">", "")
+$OutputText = $OutputText.Replace("#", "")
+$xmlOutput += "<text>$($OutputText)</text>"
 
 $xmlOutput += "</prtg>"
 

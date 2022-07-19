@@ -30,7 +30,7 @@ Example:
 
    | Settings | Value |
    | --- | --- |
-   | EXE/Script Advanced | PRTG-WinService.ps1 |
+   | EXE/Script Advanced | PRTG-WinService.ps1 -ComputerName "%host" |
    | Scanning Interval | 10 min |
 
 ## Non Domain or IP
@@ -54,31 +54,55 @@ exmaple PRTG parameter with explicit credentials:
 
 
 ## Usage
-
-```powershell
--ComputerName "%host" -ExcludePattern '^(Intel.*)$'
-```
 simple check automatic Services of Remote Computer
+```powershell
+-ComputerName "%host"
+```
 
+exclude every service starting with "Intel"
 ```powershell
 -ComputerName "%host" -ExcludePattern '^(Intel.*)$'
 ```
-check automatic Services and exclude every service starting with "Intel"
 
+exclude "Test123" and every service starting with "Intel"
+```powershell
+-ComputerName "%host" -ExcludePattern '^(Intel.*|Test123)$'
+```
+
+only check services starting with "Intel"
+```powershell
+-ComputerName "%host" -IncludePattern '^(Intel.*)$'
+```
+
+check automatic Services and requires the service "Bitdefender" to be present
+```powershell
+-ComputerName "%host" -CriticalServicePattern '^(Bitdefender)$'
+```
+
+check automatic Services and requires the service "Bitdefender" to be present and running
+```powershell
+-ComputerName "%host" -CriticalServicePattern '^(Bitdefender)$' -CriticalServiceMustRun
+```
+
+check automatic Services and require the client to have two matching CriticalServices present and running
+```powershell
+-ComputerName "%host" -CriticalServicePattern '^(Bitdefender|WinDefend)$' -CriticalServiceMustRun -CriticalServiceLimit 2
+```
+
+Use explicit credentials ("Windows credentials of parent device" is the better way)
 ```powershell
 -ComputerName "%host" -UserName "YourRemoteComputerUser" -Password "YourRemoteComputerPassword"
 ```
-Use explicit credentials ("Windows credentials of parent device" is the better way)
 
+HTTP Push from Remote Server
 ```powershell
 powershell.exe -Command "& 'C:\PRTG\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken'"
 ```
-HTTP Push from Remote Server
 
+HTTP Push from Remote Server and exclude every service starting with "Intel"
 ```powershell
 powershell.exe -Command "& 'C:\PRTG\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken' -ExcludePattern '^(Intel.*)$'"
 ```
-HTTP Push from Remote Server and exclude every service starting with "Intel"
 
 
 
