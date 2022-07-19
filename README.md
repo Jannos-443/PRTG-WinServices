@@ -52,7 +52,7 @@ example want to and and not replace the list:
     
 exmaple PRTG parameter with explicit credentials:
     
-    -ComputerName "%host" -Username "%windowsuser" -Password "%windowspassword" -Age 1
+    -ComputerName "%host" -Username "%windowsuser" -Password "%windowspassword"
 
 
 ## Usage
