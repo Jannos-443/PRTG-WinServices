@@ -59,15 +59,15 @@
 
     .PARAMETER CriticalServicePattern
     Regular expression to describe your Critical Services that has to be present on every device.
-    For Example '^(WinDefend)$'
-    combine with CriticalServiceMustRun or CriticalServiceLimit to match your requirements
+    -CriticalServicePattern '^(CsFalconService)$' -> filters for "CsFalconService" Services that are preset. CriticalService will be the number of matching services
+    -CriticalServicePattern '^(CsFalconService)$ CriticalServiceMustRun' -> filters for "CsFalconService" Services that are preset and running. CriticalService will be the number of matching services
 
     .PARAMETER CriticalServiceMustRun
     CriticalServices must be present and state has to be running.
     combine with -CriticalServicePattern
 
     .PARAMETER CriticalServiceLimit
-    default Limit for the Critical Service Count.
+    default Limit for the Critical Service Count. Does only work one time for channel creation, after that manuel work
     For Example use -CriticalServicePattern '^(WinDefend|Bitdefender)$' -CriticalServiceLimit 2
 
     .PARAMETER HideTotalServiceCount
@@ -293,10 +293,10 @@ if ($CriticalServicePattern -ne "") {
         <channel>CriticalService</channel>
         <value>$($CriticalServicesCount)</value>
         <unit>Count</unit>"
-        
+
     if ($CriticalServiceLimit -ne "") {
         $xmlOutput += "<limitmode>1</limitmode>
-            <LimitMinError>$($CriticalServiceLimit)</LimitMinError>" 
+            <LimitMinError>$($CriticalServiceLimit)</LimitMinError>"
     }
     $xmlOutput += "</result>"
     $OutputText += " ### $($CriticalServicesText)"

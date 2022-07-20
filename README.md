@@ -4,7 +4,7 @@
 
 Jannos-443
 
-## Changelog 
+## Changelog
 ### V1.0
 - Monitor automatic Windows Services
 - Added Ability to use HTTP Push to avoid local Permission on critical Remote Servers (Backup etc.)
@@ -16,9 +16,9 @@ Jannos-443
 1. Place Script on Remote Server (C:\PRTG\PRTG-WinServices.ps1)
 2. Create PRTG "HTTP Push Advanced Sensor" and copy the Token (Token is available in the Sensor Settings after creating the Sensor)
    - you should set "no incoming data" to "switch to down status after x minutes"
-3. Create Schueduled Task 
+3. Create Schueduled Task
 
-Example: 
+Example:
 
 `powershell.exe -Command "& 'C:\PRTG\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken'"`
 
@@ -41,17 +41,17 @@ If you connect to **Computers by IP** or to **not Domain Clients** please read [
 
 you maybe have to add the target to the TrustedHosts on the PRTG Probe and use explicit credentials.
 
-example (replace all currenty entries): 
+example (replace all currenty entries):
 
     Set-Item -Path WSMan:\localhost\Client\TrustedHosts -Value "ServerIP1,ServerIP2,ServerHostname1"
 
 example want to and and not replace the list:
-    
+
     $curValue = (Get-Item wsman:\localhost\Client\TrustedHosts).value
     Set-Item WSMan:\localhost\Client\TrustedHosts -Value "$curValue,NewServer3.test.com"
-    
+
 exmaple PRTG parameter with explicit credentials:
-    
+
     -ComputerName "%host" -Username "%windowsuser" -Password "%windowspassword"
 
 
@@ -76,17 +76,17 @@ only check services starting with "Intel"
 -ComputerName "%host" -IncludePattern '^(Intel.*)$'
 ```
 
-check automatic Services and requires the service "Bitdefender" to be present
+filters for "Bitdefender" Services that are preset. CriticalService will be the number of matching services
 ```powershell
 -ComputerName "%host" -CriticalServicePattern '^(Bitdefender)$'
 ```
 
-check automatic Services and requires the service "Bitdefender" to be present and running
+filters for "Bitdefender" Services that are preset and running. CriticalService will be the number of matching services
 ```powershell
 -ComputerName "%host" -CriticalServicePattern '^(Bitdefender)$' -CriticalServiceMustRun
 ```
 
-check automatic Services and require the client to have two matching CriticalServices present and running
+check automatic Services and require the client to have two matching CriticalServices present and running. Does only work for channel creation.
 ```powershell
 -ComputerName "%host" -CriticalServicePattern '^(Bitdefender|WinDefend)$' -CriticalServiceMustRun -CriticalServiceLimit 2
 ```
