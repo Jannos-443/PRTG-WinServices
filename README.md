@@ -15,10 +15,11 @@ Jannos-443
 
 ## HOW TO
 ### Option 1: Execute on Remote Server without PRTG needing local permissions on the Remote Server (HTTP Push Advanced)
-1. Place Script on Remote Server (C:\PRTG\PRTG-WinServices.ps1)
-2. Create PRTG "HTTP Push Advanced Sensor" and copy the Token (Token is available in the Sensor Settings after creating the Sensor)
+1. Place the lookup file `prtg.winservices.state.ovl` on the PRTG probe(s) under `C:\Program Files (x86)\PRTG Network Monitor\lookups\custom`
+2. Place Script on Remote Server (C:\PRTG\PRTG-WinServices.ps1)
+3. Create PRTG "HTTP Push Advanced Sensor" and copy the Token (Token is available in the Sensor Settings after creating the Sensor)
    - you should set "no incoming data" to "switch to down status after x minutes"
-3. Create Schueduled Task
+4. Create Schueduled Task
 
 Example:
 
@@ -29,7 +30,7 @@ Example:
 
 ### Option 2: Execute on PRTG Server (EXE Advanced)
 1. Place `PRTG-WinService.ps1` under `C:\Program Files (x86)\PRTG Network Monitor\Custom Sensors\EXEXML`
-
+2. Place the lookup file `prtg.winservices.state.ovl` on the PRTG probe(s) under `C:\Program Files (x86)\PRTG Network Monitor\lookups\custom`
 3. Create new Sensor
 
    | Settings | Value |
