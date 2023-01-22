@@ -10,6 +10,8 @@ Jannos-443
 - Added Ability to use HTTP Push to avoid local Permission on critical Remote Servers (Backup etc.)
 ### V1.01
 - Added Ability to define Critical Services that have to be present
+### V1.02
+- Added ChannelPerService and HideAutomaticNotRunning parameter
 
 ## HOW TO
 ### Option 1: Execute on Remote Server without PRTG needing local permissions on the Remote Server (HTTP Push Advanced)

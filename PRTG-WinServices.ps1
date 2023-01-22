@@ -103,13 +103,16 @@
     -Command "& 'D:\Powershell\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken'"
 
     .NOTES
-    This script is based on (https://github.com/debold/PRTG-WindowsServices)
-
-    Author:  Jannos-443
-    https://github.com/Jannos-443/PRTG-WinServices
+    Version:        1.02
+    Author:         Jannos-443
+    URL:            https://github.com/Jannos-443/PRTG-WinServices
+    Creation Date:  22.01.2023
+    Purpose/Change: Added ChannelPerService and HideAutomaticNotRunning parameter
+    
+    This script is based on (https://github.com/debold/PRTG-WindowsServices)    
 #>
 param(
-    [string] $ComputerName = '', #use "localhost" if you want to run the Script with HTTP Push on a Remote Server
+    [string] $ComputerName = '',                #use "localhost" if you want to run the Script with HTTP Push on a Remote Server
     [string] $UserName = "",
     [string] $Password = "",
     [string] $IncludePattern = '',
