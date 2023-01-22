@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+  <ValueLookup id="prtg.winservices.state" desiredValue="4" undefinedState="Error">
+    <Lookups>
+      <SingleInt state="Warning" value="5">ContinuePending</SingleInt>
+      <SingleInt state="Warning" value="7">Paused</SingleInt>
+      <SingleInt state="Warning" value="6">PausePending</SingleInt>
+	  <SingleInt state="Ok" value="4">Running</SingleInt>
+      <SingleInt state="Warning" value="2">StartPending</SingleInt>
+      <SingleInt state="Error" value="1">Stopped</SingleInt>
+	  <SingleInt state="Error" value="3">StopPending</SingleInt>
+    </Lookups>
+  </ValueLookup>

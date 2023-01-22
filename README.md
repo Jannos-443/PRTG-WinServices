@@ -106,13 +106,18 @@ HTTP Push from Remote Server and exclude every service starting with "Intel"
 powershell.exe -Command "& 'C:\PRTG\PRTG-WinServices.ps1' -ComputerName 'localhost' -HttpPush -HttpServer 'YourPRTGServer' -HttpPort '5050' -HttpToken 'YourHTTPPushToken' -ExcludePattern '^(Intel.*)$'"
 ```
 
-
+Show channel for each service, use with "IncludePattern"
+```powershell
+-ComputerName "%host" -IncludePattern '^(prtg.*)$' -HideTotalServiceCount -HideAutomaticNotRunning -ChannelPerService
+```
 
 ## Examples
 
 ![PRTG-WinService](media/ok.png)
 
 ![PRTG-WinService](media/error.png)
+
+![PRTG-WinService](media/channel.png)
 
 ## Includes/Excludes
 

@@ -73,6 +73,13 @@
     .PARAMETER HideTotalServiceCount
     Hides the "Total Services" channel
 
+    .PARAMETER HideAutomaticNotRunning
+    Hides the "Automatic Services not running" channel
+
+    .PARAMETER ChannelPerService
+    Creates one Channel per Service
+    Should not be used with a lot of services, recommended to use with "IncludePattern".
+
     .PARAMETER HttpPush
     enables HTTP Push in the Sensor (requires HttpToken, HttpServer and HttpPort)
 
@@ -112,11 +119,13 @@ param(
     [switch] $CriticalServiceMustRun,
     [int] $CriticalServiceLimit = '1',
     [Switch] $HideTotalServiceCount,
-    [switch] $HttpPush, #enables http push, usefull if you want to run the Script on the target Server to reduce remote Permissions
-    [string] $HttpToken, #http push token
-    [string] $HttpServer, #http push prtg server hostname
-    [string] $HttpPort = "5050", #http push port (default 5050)
-    [switch] $HttpPushUseSSL        #use https for http push
+    [Switch] $HideAutomaticNotRunning,
+    [Switch] $ChannelPerService,                
+    [switch] $HttpPush,                         #enables http push, usefull if you want to run the Script on the target Server to reduce remote Permissions
+    [string] $HttpToken,                        #http push token
+    [string] $HttpServer,                       #http push prtg server hostname
+    [string] $HttpPort = "5050",                #http push port (default 5050)
+    [switch] $HttpPushUseSSL                    #use https for http push
 )
 #Catch all unhandled Errors
 trap {
@@ -250,7 +259,33 @@ else {
     $OutputText += "All automatic services are running. "
 }
 
-$xmlOutput += "<result>
+#region: ChannelPerService
+if ($ChannelPerService){
+    foreach($Service in $Services){
+        $ServiceState = -1
+        Switch ($Service.State)
+        {
+        "ContinuePending" {$ServiceState = 5}
+        "Paused" {$ServiceState = 7}
+        "PausePending" {$ServiceState = 6}
+        "Running" {$ServiceState = 4}
+        "StartPending" {$ServiceState = 2}
+        "Stopped" {$ServiceState = 1}
+        "StopPending" {$ServiceState = 3}
+        }
+
+        $xmlOutput += "<result>
+        <channel>$($Service.Displayname)</channel>
+        <value>$($ServiceState)</value>
+        <ValueLookup>prtg.winservices.state</ValueLookup>
+        </result>"
+    }
+}
+#endregion
+
+
+if (-not $HideAutomaticNotRunning) {
+    $xmlOutput += "<result>
         <channel>Automatic Services not running</channel>
         <value>$($NotRunningCount)</value>
         <unit>Count</unit>
@@ -258,6 +293,7 @@ $xmlOutput += "<result>
         <LimitMaxError>0</LimitMaxError>
         </result>
         "
+}
 
 if (-not $HideTotalServiceCount) {
     $xmlOutput += "<result>
@@ -268,7 +304,7 @@ if (-not $HideTotalServiceCount) {
     "
 }
 
-#region Critical Services
+#region: Critical Services
 if ($CriticalServicePattern -ne "") {
     if ($CriticalServiceMustRun) {
         $CriticalServices = $Services | Where-Object { ($_.Name -match $CriticalServicePattern) -and ($_.State -eq "Running") }
